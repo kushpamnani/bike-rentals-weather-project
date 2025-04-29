@@ -1,0 +1,168 @@
+---
+title: "Bike Rentals and Weather"
+author: "Kush Pamnani"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(lubridate)
+
+# Load the datasets
+bike_data <- read.csv("day.csv")
+hour_data <- read.csv("hour.csv")
+
+# Rename columns for easier analysis
+bike_data <- bike_data %>%
+  rename(
+    season = season,
+    year = yr,
+    month = mnth,
+    holiday = holiday,
+    weekday = weekday,
+    workingday = workingday,
+    weather = weathersit,
+    temp = temp,
+    humidity = hum,
+    windspeed = windspeed,
+    rentals = cnt
+  )
+
+hour_data <- hour_data %>%
+  rename(
+    season = season,
+    year = yr,
+    month = mnth,
+    hour = hr,
+    holiday = holiday,
+    weekday = weekday,
+    workingday = workingday,
+    weather = weathersit,
+    temp = temp,
+    humidity = hum,
+    windspeed = windspeed,
+    rentals = cnt
+  )
+```
+
+# Introduction
+
+Bike sharing programs are becoming increasingly popular as cities seek environmentally friendly transportation alternatives. Understanding the factors that influence bike rental demand is crucial for optimizing operations, planning for future infrastructure, and promoting bike sharing initiatives.
+
+In this project, I explore how weather conditions, seasonal factors, and time of day impact bike rentals. Using two datasets, one aggregated by **day** and another by **hour**, I aim to uncover both overall patterns and more detailed hourly usage trends.
+
+# Data
+
+The dataset used for this project is the **Bike Sharing Dataset** from the UCI Machine Learning Repository. It contains:
+- **day.csv**: 731 daily records for 2011 and 2012
+- **hour.csv**: 17,379 hourly records for 2011 and 2012
+
+Key variables include:
+- `dteday`: Date of the record
+- `season`: 1 (Winter), 2 (Spring), 3 (Summer), 4 (Fall)
+- `yr`: Year (0: 2011, 1: 2012)
+- `mnth`: Month (1 to 12)
+- `hr`: Hour (only in hour.csv)
+- `holiday`: Whether the day is a holiday
+- `weekday`: Day of the week (0 = Sunday)
+- `workingday`: Whether it is a working day
+- `weathersit`: Weather situation (1 = Clear, 2 = Misty, etc.)
+- `temp`: Normalized temperature in Celsius
+- `atemp`: Normalized feeling temperature
+- `hum`: Humidity
+- `windspeed`: Wind speed
+- `casual`, `registered`, `cnt` (total rentals)
+
+# Main Analysis
+
+## Rentals by Season (Daily Data)
+
+```{r rentals-by-season, echo=TRUE}
+ggplot(bike_data, aes(x = factor(season), y = rentals)) +
+  geom_boxplot(fill = "lightblue") +
+  labs(
+    title = "Bike Rentals by Season (Daily)",
+    x = "Season (1 = Winter, 2 = Spring, 3 = Summer, 4 = Fall)",
+    y = "Number of Rentals"
+  )
+```
+
+From the boxplot, rentals appear to be higher during **summer and fall**. Winter sees the lowest rentals, as expected.
+
+## Temperature vs. Rentals (Daily Data)
+
+```{r temperature-vs-rentals, echo=TRUE}
+ggplot(bike_data, aes(x = temp, y = rentals)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(
+    title = "Temperature vs Bike Rentals (Daily)",
+    x = "Normalized Temperature",
+    y = "Rentals"
+  )
+```
+
+There is a **positive linear relationship** between temperature and rentals. Warmer days attract more riders.
+
+## Rentals on Working vs Non-working Days (Daily Data)
+
+```{r workingday-vs-rentals, echo=TRUE}
+bike_data %>%
+  group_by(workingday) %>%
+  summarise(avg_rentals = mean(rentals)) %>%
+  ggplot(aes(x = factor(workingday), y = avg_rentals, fill = factor(workingday))) +
+  geom_col() +
+  labs(
+    title = "Average Rentals: Working vs Non-working Days (Daily)",
+    x = "Working Day (0 = No, 1 = Yes)",
+    y = "Average Rentals"
+  ) +
+  theme_minimal()
+```
+
+Working days have slightly more rentals, likely due to commuter traffic.
+
+# Hourly Rental Patterns
+
+## Rentals by Hour (Hourly Data)
+
+```{r rentals-by-hour, echo=TRUE}
+ggplot(hour_data, aes(x = hour, y = rentals)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = "loess", se = FALSE, color = "blue") +
+  labs(
+    title = "Bike Rentals by Hour of the Day",
+    x = "Hour (0 = midnight, 12 = noon)",
+    y = "Number of Rentals"
+  )
+```
+
+Hourly rentals reveal clear patterns with peaks during typical commute hours (around 8 AM and 5 PM).
+
+# Skepticism and Further Exploration
+
+Although temperature strongly correlates with bike rentals, other factors may also play important roles. 
+Possible issues to explore further:
+- **Humidity and windspeed**: Could high humidity or windiness deter bike use?
+- **Holiday effect**: Are holidays associated with fewer or more rentals?
+- **Hourly anomalies**: Specific events like rainstorms or holidays may create sudden spikes or drops.
+
+Future analysis could involve fitting **multiple regression models** using both hourly and daily data.
+
+# Conclusion
+
+The analysis shows that temperature, seasonality, working days, and time of day significantly affect bike rentals. Warmer weather and working days correlate with higher demand. Additionally, hourly patterns show commuting behavior.
+
+Future work could involve:
+- Building predictive models (linear regression, random forest)
+- Adding external events (holidays, sports games) as features
+- Using clustering to find different types of rental patterns
+
+Overall, combining **daily and hourly data** provides a deeper, more accurate understanding of bike rental behaviors.
+
+# Reproducibility
+
+All code necessary to recreate the analysis is included in this RMarkdown document.  
+Libraries used: `tidyverse`, `lubridate`.
+
+---
